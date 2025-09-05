@@ -4,7 +4,7 @@ Um servidor MCP (Model Context Protocol) para integração com o Metasploit Fram
 
 ## Demonstração
 
-![Metasploit MCP Demo](docs/demo.gif)
+https://github.com/user-attachments/assets/39b19fb5-8397-4ccd-b896-d1797ec185e1
 
 *Exemplo de uso do Metasploit MCP com Claude Desktop*
 
