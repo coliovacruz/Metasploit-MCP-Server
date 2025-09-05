@@ -156,20 +156,15 @@ nano ~/.config/Claude/claude_desktop_config.json
 Configuração para Kali Linux:
 ```json
 {
-    "mcpServers": {
-        "metasploit": {
-            "command": "/home/kali/metasploit-mcp-server/venv/bin/python",
-            "args": [
-                "/home/kali/metasploit-mcp-server/MetasploitMCP.py",
-                "--transport",
-                "stdio"
-            ],
-            "env": {
-                "MSF_PASSWORD": "yourpassword",
-                "PAYLOAD_SAVE_DIR": "/home/kali/payloads"
-            }
-        }
+  "mcpServers": {
+    "metasploit": {
+      "command": "/home/kali/metasploit-mcp-server/venv/bin/python",
+      "args": ["/home/kali/metasploit-mcp-server/MetasploitMCP.py", "--transport", "stdio"],
+      "env": {
+        "MSF_PASSWORD": "yourpassword"
+      }
     }
+  }
 }
 ```
 
